@@ -1,7 +1,8 @@
-package com.zenith
+package com.zenith.activity
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import com.zenith.R
 
 class MainActivity : AppCompatActivity() {
 
