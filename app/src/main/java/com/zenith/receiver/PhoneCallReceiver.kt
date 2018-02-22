@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
 import android.util.Log
-import android.widget.Toast
-import java.util.*
 
 open class PhoneCallReceiver : BroadcastReceiver() {
 
@@ -14,31 +12,43 @@ open class PhoneCallReceiver : BroadcastReceiver() {
         @JvmField val TAG = "PhoneCallReceiver"
         var lastState : Int = TelephonyManager.CALL_STATE_IDLE
         var isIncoming : Boolean = false
-        var callStartTime : Date? = null
         var savedNumber : String = ""
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        val stateStr : String = intent.extras.getString(TelephonyManager.EXTRA_STATE)
-        val number : String = intent.extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)
-        val state : Int
+        if(intent.action.equals("android.intent.action.NEW_OUTGOING_CALL")){
+            savedNumber = intent.extras.getString("android.intent.extra.PHONE_NUMBER")
+        }
+        else {
+            if (intent.extras != null) {
+                var stateStr = ""
+                var number = ""
+                val state: Int
 
-        state = if (stateStr.equals(TelephonyManager.EXTRA_STATE_IDLE)){
-            TelephonyManager.CALL_STATE_IDLE
-        }
-        else if (stateStr.equals(TelephonyManager.CALL_STATE_OFFHOOK)){
-            TelephonyManager.CALL_STATE_OFFHOOK
-        }
-        else if (stateStr.equals(TelephonyManager.EXTRA_STATE_RINGING)){
-            TelephonyManager.CALL_STATE_RINGING
-        }
-        else{
-            0
-        }
+                try {
+                    stateStr = intent.extras.getString(TelephonyManager.EXTRA_STATE)
+                    number = intent.extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)
+                    Log.e(PhoneCallReceiver.TAG,"Extras = " + intent.extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER))
+                }
+                catch (ex: Exception){
+                    Log.e(PhoneCallReceiver.TAG,"Exception = " + ex)
+                }
 
-        Log.e(PhoneCallReceiver.TAG,"State = " + state)
+                state = if (stateStr.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
+                    TelephonyManager.CALL_STATE_IDLE
+                } else if (stateStr.equals(TelephonyManager.CALL_STATE_OFFHOOK)) {
+                    TelephonyManager.CALL_STATE_OFFHOOK
+                } else if (stateStr.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
+                    TelephonyManager.CALL_STATE_RINGING
+                } else {
+                    0
+                }
 
-        onCallStateChanged(context,state,number)
+                Log.e(PhoneCallReceiver.TAG, "State = " + state)
+
+                onCallStateChanged(context, state, number)
+            }
+        }
     }
 
     //Deals with actual events
@@ -54,35 +64,36 @@ open class PhoneCallReceiver : BroadcastReceiver() {
         when(state){
             TelephonyManager.CALL_STATE_RINGING -> {
                 isIncoming = true
-                callStartTime = Date()
                 savedNumber = number
-                onIncomingCallStarted(context,number, callStartTime!!)
+                onIncomingCallStarted(context,number)
             }
             TelephonyManager.CALL_STATE_OFFHOOK -> {
                 //Transition of ringing->offhook are pickups of incoming call
                 if(lastState != TelephonyManager.CALL_STATE_RINGING){
                     isIncoming = false
-                    callStartTime = Date()
+                    onOutgoingCallStarted(context, savedNumber)
                 }
             }
             TelephonyManager.CALL_STATE_IDLE -> {
                 //Went to idle - this is the end of a call
                 if(lastState == TelephonyManager.CALL_STATE_RINGING){
                     //Ring but no pickup
-                    onMissedCall(context, savedNumber, callStartTime!!)
+                    onMissedCall(context, savedNumber)
                 }
                 else if (isIncoming){
-                    onIncomingCallEnded(context, savedNumber, callStartTime!!,Date())
+                    onIncomingCallEnded(context, savedNumber)
                 }
                 else{
-                    onIncomingCallEnded(context, savedNumber, callStartTime!!,Date())
+                    onOutgoingCallEnded(context, savedNumber)
                 }
             }
         }
         lastState = state
     }
 
-    protected open fun onIncomingCallStarted(context: Context, number: String, start: Date){}
-    protected open fun onIncomingCallEnded(context: Context, number: String, start: Date, end: Date){}
-    protected open fun onMissedCall(context: Context, number: String, start: Date){}
+    protected open fun onIncomingCallStarted(context: Context, number: String){}
+    protected open fun onOutgoingCallStarted(context: Context, number: String){}
+    protected open fun onIncomingCallEnded(context: Context, number: String){}
+    protected open fun onOutgoingCallEnded(context: Context, number: String){}
+    protected open fun onMissedCall(context: Context, number: String){}
 }
