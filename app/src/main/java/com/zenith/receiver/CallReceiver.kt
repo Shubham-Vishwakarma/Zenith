@@ -28,6 +28,7 @@ class CallReceiver : PhoneCallReceiver() {
             try {
                 Log.e(CallReceiver.TAG,"Picking up the call")
                 Runtime.getRuntime().exec("input keyevent " + KeyEvent.KEYCODE_HEADSETHOOK.toString())
+                Runtime.getRuntime().exec("input keyevent " + KeyEvent.KEYCODE_HEADSETHOOK.toString())
 
                 thread(start = true){
                     try {
