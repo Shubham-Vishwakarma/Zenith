@@ -51,9 +51,11 @@ class MainActivity : AppCompatActivity(), AIListener {
             //callback onRequestPermissionsResult
         } else {
             number = getContacts()
-            val callIntent = Intent(Intent.ACTION_CALL)
-            callIntent.data = Uri.parse("tel:" + number)
-            startActivity(callIntent)
+            if(number!="nothing") {
+                val callIntent = Intent(Intent.ACTION_CALL)
+                callIntent.data = Uri.parse("tel:" + number)
+                startActivity(callIntent)
+            }
         }
     }
     private fun getContacts(): String{
@@ -64,26 +66,23 @@ class MainActivity : AppCompatActivity(), AIListener {
             while (cursor.moveToNext()) {
                 val id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
                 val name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
-                var phones = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + id, null, null);
-                if (phones.count > 0) {
-                    while (phones.moveToNext()) {
-                        var phoneNumber = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+
                         if (second == name) {
-                            Toast.makeText(this, "Number " + phoneNumber, Toast.LENGTH_LONG).show()
-                            phones.close();
-                            cursor.close()
-                            return phoneNumber
-                        } else {
-                            //Toast.makeText(this, "name not found ", Toast.LENGTH_LONG).show()
+                            var phones = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + id, null, null)
+                            if (phones.count > 0) {
+                                while (phones.moveToNext()) {
+                                    var phoneNumber = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                                    Toast.makeText(this, "Number " + phoneNumber, Toast.LENGTH_LONG).show()
+                                    phones.close()
+                                    cursor.close()
+                                    return phoneNumber
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-        else {
-            Toast.makeText(this, "name not found ", Toast.LENGTH_LONG).show()
-        }
+        Toast.makeText(this, "name not found ", Toast.LENGTH_LONG).show()
         cursor.close()
         return "nothing"
     }
