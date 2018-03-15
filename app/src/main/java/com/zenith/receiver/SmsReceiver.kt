@@ -1,4 +1,4 @@
-package com.zenith
+package com.zenith.receiver
 
 import android.widget.Toast
 import android.content.Intent

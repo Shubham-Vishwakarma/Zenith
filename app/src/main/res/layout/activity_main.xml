@@ -12,14 +12,5 @@
         android:layout_height="wrap_content"
         android:id="@+id/start"
         android:text="Start"/>
-    <ToggleButton
-        android:id="@+id/speechToggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textOff="@string/speech_toggle_on"
-        android:textOn="@string/speech_toggle_off"
-        />
-
-
 
 </LinearLayout>

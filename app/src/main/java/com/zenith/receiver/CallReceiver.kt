@@ -16,7 +16,7 @@ import java.lang.Thread.sleep
 class CallReceiver : PhoneCallReceiver() {
 
     companion object {
-        @JvmField val TAG = "CallReceiver"
+        val TAG = "CallReceiver"
     }
 
     override fun onIncomingCallStarted(context: Context, number: String){
@@ -26,7 +26,7 @@ class CallReceiver : PhoneCallReceiver() {
 
         try {
             try {
-                Log.e(CallReceiver.TAG,"Picking up the call")
+                Log.e(TAG,"Picking up the call")
                 Runtime.getRuntime().exec("input keyevent " + KeyEvent.KEYCODE_HEADSETHOOK.toString())
                 Runtime.getRuntime().exec("input keyevent " + KeyEvent.KEYCODE_HEADSETHOOK.toString())
 
@@ -47,7 +47,7 @@ class CallReceiver : PhoneCallReceiver() {
                 }
             }
             catch (ex:Exception){
-                Log.e(CallReceiver.TAG,"Error = " + ex)
+                Log.e(TAG,"Error = " + ex)
                 val enforcedParam = "android.permission.CALL_PRIVILEGED"
                 val btnDown = Intent(Intent.ACTION_MEDIA_BUTTON).putExtra(
                         Intent.EXTRA_KEY_EVENT,KeyEvent(KeyEvent.ACTION_DOWN,KeyEvent.KEYCODE_HEADSETHOOK)
@@ -61,7 +61,7 @@ class CallReceiver : PhoneCallReceiver() {
             }
         }
         catch (ex:Exception){
-            Log.e(CallReceiver.TAG,"Error = " + ex)
+            Log.e(TAG,"Error = " + ex)
         }
 
     }

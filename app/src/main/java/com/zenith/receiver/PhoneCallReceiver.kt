@@ -9,7 +9,7 @@ import android.util.Log
 open class PhoneCallReceiver : BroadcastReceiver() {
 
     companion object {
-        @JvmField val TAG = "PhoneCallReceiver"
+        val TAG = "PhoneCallReceiver"
         var lastState : Int = TelephonyManager.CALL_STATE_IDLE
         var isIncoming : Boolean = false
         var savedNumber : String = ""
@@ -28,10 +28,10 @@ open class PhoneCallReceiver : BroadcastReceiver() {
                 try {
                     stateStr = intent.extras.getString(TelephonyManager.EXTRA_STATE)
                     number = intent.extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)
-                    Log.e(PhoneCallReceiver.TAG,"Extras = " + intent.extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER))
+                    Log.e(TAG,"Extras = " + intent.extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER))
                 }
                 catch (ex: Exception){
-                    Log.e(PhoneCallReceiver.TAG,"Exception = " + ex)
+                    Log.e(TAG,"Exception = " + ex)
                 }
 
                 state = if (stateStr.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
@@ -44,7 +44,7 @@ open class PhoneCallReceiver : BroadcastReceiver() {
                     0
                 }
 
-                Log.e(PhoneCallReceiver.TAG, "State = " + state)
+                Log.e(TAG, "State = " + state)
 
                 onCallStateChanged(context, state, number)
             }
