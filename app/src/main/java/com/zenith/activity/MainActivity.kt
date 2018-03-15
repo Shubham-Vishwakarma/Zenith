@@ -1,6 +1,5 @@
 package com.zenith.activity
 
-import ai.api.AIConfiguration.SupportedLanguages
 import ai.api.AIListener
 import ai.api.android.AIConfiguration
 import ai.api.android.AIConfiguration.RecognitionEngine
@@ -8,6 +7,8 @@ import ai.api.android.AIService
 import ai.api.model.AIError
 import ai.api.model.AIResponse
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.ProgressDialog
 import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -28,6 +29,7 @@ class MainActivity : AppCompatActivity(), AIListener{
         val TAG = "MainActivity"
         val CLIENT_TOKEN = "0c6d9a13bae340148af0528442089191"
         val PERMISSIONS_REQUEST_READ_CONTACTS = 1000
+        lateinit var progressDialog: ProgressDialog
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,13 +55,15 @@ class MainActivity : AppCompatActivity(), AIListener{
 
         val str= query.split("\\s+".toRegex())
 
-        Log.e(TAG,"First = " + str[0])
-        Log.e(TAG,"Second = " + str[1])
-        loadContacts(str[0],str[1])
+        Log.e(TAG,"Action = " + str[0])
+        Log.e(TAG,"Parameter = " + str[1])
+
+        performAction(str[0],str[1])
     }
 
     override fun onListeningStarted() {
         Log.e(TAG,"Listening Started")
+        showProgressDialog()
     }
 
     override fun onAudioLevel(level: Float) {
@@ -75,35 +79,53 @@ class MainActivity : AppCompatActivity(), AIListener{
 
     override fun onListeningFinished() {
         Log.e(TAG,"Listening Finished")
+        hideProgressDialog()
     }
 
-    private fun loadContacts(func: String,name: String) {
-        val number : String
+    private fun performAction(action: String, param: String){
+        when (action){
+            "call" -> {
+                val number = loadContacts(param)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED)
-            requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), PERMISSIONS_REQUEST_READ_CONTACTS)
-        else {
-            number = getContacts(name)
-            Log.e(TAG,"Number = " + number)
-            if(number != "nothing") {
-                if(func == "call") {
+                if(number.isNotEmpty()) {
                     val callIntent = Intent(Intent.ACTION_CALL)
                     callIntent.data = Uri.parse("tel:" + number)
                     startActivity(callIntent)
                 }
-                else if(func == "message" || func == "send")
-                {
+            }
+            "message" -> {
+                val number = loadContacts(param)
+
+                if(number.isNotEmpty()) {
                     val uri: Uri = Uri.parse("smsto:" + number)
-                    val smsIntent = Intent(Intent.ACTION_SENDTO,uri)
+                    val smsIntent = Intent(Intent.ACTION_SENDTO, uri)
                     smsIntent.putExtra("sms_body", "SMS application launched from Zenith")
                     startActivity(smsIntent)
                 }
             }
+            else -> {
+                Toast.makeText(this,"Action cannot be performed",Toast.LENGTH_LONG).show()
+            }
         }
     }
 
-    private fun getContacts(name: String): String{
-        val resolver: ContentResolver = contentResolver;
+    private fun loadContacts(name: String):String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED)
+            requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), PERMISSIONS_REQUEST_READ_CONTACTS)
+        else {
+            val number = getContactNumber(name)
+            Log.e(TAG,"Number = " + number)
+            return if(number.isNotEmpty())
+                number
+            else
+                ""
+        }
+        return ""
+    }
+
+    private fun getContactNumber(name: String): String{
+        val resolver: ContentResolver = contentResolver
+
         val cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null,
                 null)
 
@@ -111,13 +133,13 @@ class MainActivity : AppCompatActivity(), AIListener{
             val id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
             val displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
 
-            if (name.equals(displayName,true)) {
+            if (displayName.contains(name,ignoreCase = true)) {
                 val phones = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
                         ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + id, null, null)
 
                 while (phones.moveToNext()) {
                     val phoneNumber = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-                    Toast.makeText(this, "Number " + phoneNumber, Toast.LENGTH_LONG).show()
+                    //Toast.makeText(this, "Number " + phoneNumber, Toast.LENGTH_LONG).show()
                     phones.close()
                     cursor.close()
                     return phoneNumber
@@ -126,8 +148,21 @@ class MainActivity : AppCompatActivity(), AIListener{
         }
 
 
-        Toast.makeText(this, "name not found ", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, "Name not found", Toast.LENGTH_LONG).show()
         cursor.close()
-        return "nothing"
+        return ""
+    }
+
+    private fun showProgressDialog(){
+        progressDialog = ProgressDialog(this)
+        progressDialog.setMessage("Listening...")
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER)
+        progressDialog.setCancelable(false)
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.show()
+    }
+
+    private fun hideProgressDialog(){
+        progressDialog.cancel()
     }
 }
