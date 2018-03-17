@@ -9,6 +9,7 @@ import ai.api.model.AIResponse
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ProgressDialog
+import android.content.ActivityNotFoundException
 import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,14 +17,23 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.speech.RecognizerIntent
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.TextView
 import android.widget.Toast
 import com.zenith.R
+import kotlinx.android.synthetic.main.activity_main.*
+import java.util.*
 
 
 class MainActivity : AppCompatActivity(), AIListener{
+
+    private val REQ_CODE_SPEECH_INPUT = 100
+    var result = ArrayList<String>()
 
     companion object {
         val TAG = "MainActivity"
@@ -36,6 +46,9 @@ class MainActivity : AppCompatActivity(), AIListener{
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val txtSpeechInput = findViewById<TextView>(R.id.txtSpeechInput)
+        val btnSpeak = findViewById<ImageButton>(R.id.btnSpeak)
+
         val config = AIConfiguration(CLIENT_TOKEN,
                 ai.api.AIConfiguration.SupportedLanguages.English,
                 RecognitionEngine.System)
@@ -46,8 +59,55 @@ class MainActivity : AppCompatActivity(), AIListener{
         button.setOnClickListener({
             aiService.startListening()
         })
+
+        btnSpeak.setOnClickListener(object : View.OnClickListener {
+
+            override fun onClick(v: View) {
+                promptSpeechInput()
+            }
+        })
     }
 
+
+    /**
+     * Showing google speech input dialog
+     * */
+    private fun promptSpeechInput() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
+                getString(R.string.speech_prompt))
+        try
+        {
+            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT)
+        }
+        catch (a: ActivityNotFoundException) {
+            Toast.makeText(getApplicationContext(),
+                    getString(R.string.speech_not_supported),
+                    Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Receiving speech input
+     * */
+    protected override fun onActivityResult(requestCode:Int, resultCode:Int, data:Intent) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            REQ_CODE_SPEECH_INPUT -> {
+                if (resultCode == RESULT_OK && null != data)
+                {
+                    result.clear()
+                     result = data
+                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    txtSpeechInput.setText(result.get(0))
+
+                }
+            }
+        }
+    }
 
     override fun onResult(result: AIResponse) {
         val res = result.result
@@ -82,6 +142,7 @@ class MainActivity : AppCompatActivity(), AIListener{
         hideProgressDialog()
     }
 
+    @SuppressLint("MissingPermission")
     private fun performAction(action: String, param: String){
         when (action){
             "call" -> {
@@ -95,12 +156,18 @@ class MainActivity : AppCompatActivity(), AIListener{
             }
             "message" -> {
                 val number = loadContacts(param)
-
+               // result.clear()
                 if(number.isNotEmpty()) {
-                    val uri: Uri = Uri.parse("smsto:" + number)
-                    val smsIntent = Intent(Intent.ACTION_SENDTO, uri)
-                    smsIntent.putExtra("sms_body", "SMS application launched from Zenith")
-                    startActivity(smsIntent)
+
+                    val toast = Toast.makeText(this," " + param + ": " + number, Toast.LENGTH_SHORT).show()
+                   // val t1 = Toast.makeText(this, "Tap the mic and speak!", Toast.LENGTH_SHORT).show()
+                    //if(!result.isEmpty()) {
+                        val uri: Uri = Uri.parse("smsto:" + number)
+                        val smsIntent = Intent(Intent.ACTION_SENDTO, uri)
+                        Log.e(TAG,"Message = " + result)
+                        smsIntent.putExtra("sms_body", result.get(0))
+                        startActivity(smsIntent)
+                    //}
                 }
             }
             else -> {
