@@ -32,22 +32,18 @@ import java.util.*
 
 class MainActivity : AppCompatActivity(), AIListener{
 
-    private val REQ_CODE_SPEECH_INPUT = 100
-    var result = ArrayList<String>()
-
     companion object {
         val TAG = "MainActivity"
+        val REQ_CODE_SPEECH_INPUT = 100
         val CLIENT_TOKEN = "0c6d9a13bae340148af0528442089191"
         val PERMISSIONS_REQUEST_READ_CONTACTS = 1000
         lateinit var progressDialog: ProgressDialog
+        var number = "0000000000"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        val txtSpeechInput = findViewById<TextView>(R.id.txtSpeechInput)
-        val btnSpeak = findViewById<ImageButton>(R.id.btnSpeak)
 
         val config = AIConfiguration(CLIENT_TOKEN,
                 ai.api.AIConfiguration.SupportedLanguages.English,
@@ -56,16 +52,10 @@ class MainActivity : AppCompatActivity(), AIListener{
         val aiService = AIService.getService(this,config)
         aiService.setListener(this)
         val button = findViewById<Button>(R.id.start)
-        button.setOnClickListener({
+        button.setOnClickListener{
             aiService.startListening()
-        })
+        }
 
-        btnSpeak.setOnClickListener(object : View.OnClickListener {
-
-            override fun onClick(v: View) {
-                promptSpeechInput()
-            }
-        })
     }
 
 
@@ -74,36 +64,27 @@ class MainActivity : AppCompatActivity(), AIListener{
      * */
     private fun promptSpeechInput() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
-                getString(R.string.speech_prompt))
-        try
-        {
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.speech_prompt))
+        try {
             startActivityForResult(intent, REQ_CODE_SPEECH_INPUT)
         }
         catch (a: ActivityNotFoundException) {
-            Toast.makeText(getApplicationContext(),
-                    getString(R.string.speech_not_supported),
-                    Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.speech_not_supported), Toast.LENGTH_SHORT).show()
         }
     }
 
     /**
      * Receiving speech input
      * */
-    protected override fun onActivityResult(requestCode:Int, resultCode:Int, data:Intent) {
+    override fun onActivityResult(requestCode:Int, resultCode:Int, data:Intent) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQ_CODE_SPEECH_INPUT -> {
-                if (resultCode == RESULT_OK && null != data)
-                {
-                    result.clear()
-                     result = data
-                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                    txtSpeechInput.setText(result.get(0))
-
+                if (resultCode == RESULT_OK) {
+                    val result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    sendMessageIntent(result[0])
                 }
             }
         }
@@ -146,7 +127,7 @@ class MainActivity : AppCompatActivity(), AIListener{
     private fun performAction(action: String, param: String){
         when (action){
             "call" -> {
-                val number = loadContacts(param)
+                number = loadContacts(param)
 
                 if(number.isNotEmpty()) {
                     val callIntent = Intent(Intent.ACTION_CALL)
@@ -155,25 +136,24 @@ class MainActivity : AppCompatActivity(), AIListener{
                 }
             }
             "message" -> {
-                val number = loadContacts(param)
-               // result.clear()
+                number = loadContacts(param)
                 if(number.isNotEmpty()) {
-
-                    val toast = Toast.makeText(this," " + param + ": " + number, Toast.LENGTH_SHORT).show()
-                   // val t1 = Toast.makeText(this, "Tap the mic and speak!", Toast.LENGTH_SHORT).show()
-                    //if(!result.isEmpty()) {
-                        val uri: Uri = Uri.parse("smsto:" + number)
-                        val smsIntent = Intent(Intent.ACTION_SENDTO, uri)
-                        Log.e(TAG,"Message = " + result)
-                        smsIntent.putExtra("sms_body", result.get(0))
-                        startActivity(smsIntent)
-                    //}
+                    promptSpeechInput()
+                    Toast.makeText(this, " $param: $number", Toast.LENGTH_SHORT).show()
                 }
             }
             else -> {
                 Toast.makeText(this,"Action cannot be performed",Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    private fun sendMessageIntent(message: String){
+        val uri: Uri = Uri.parse("smsto:" + number)
+        val smsIntent = Intent(Intent.ACTION_SENDTO, uri)
+        Log.e(TAG,"Message = " + message)
+        smsIntent.putExtra("sms_body", message)
+        startActivity(smsIntent)
     }
 
     private fun loadContacts(name: String):String {
