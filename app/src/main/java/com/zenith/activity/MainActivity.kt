@@ -12,6 +12,7 @@ import android.app.ProgressDialog
 import android.content.ActivityNotFoundException
 import android.content.ContentResolver
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -142,6 +143,54 @@ class MainActivity : AppCompatActivity(), AIListener{
                     Toast.makeText(this, " $param: $number", Toast.LENGTH_SHORT).show()
                 }
             }
+            "open" -> {
+                /*
+                Log.e(TAG,param)
+                val appString = param.toLowerCase()
+                Log.e(TAG,appString)
+                when(appString) {
+                    "whatsapp","zenith" -> {
+                        val launchIntent = packageManager.getLaunchIntentForPackage("com." + appString)
+                        startActivity(launchIntent)
+                    }
+                    "facebook" -> {
+                        val launchIntent = packageManager.getLaunchIntentForPackage("com." + appString + ".katana")
+                        startActivity(launchIntent)
+                    }
+                    "snapchat","instagram","    ","" -> {
+                        val launchIntent = packageManager.getLaunchIntentForPackage("com." + appString + ".android")
+                        startActivity(launchIntent)
+                    }
+                    else ->{
+                        val launchIntent = packageManager.getLaunchIntentForPackage("com.google.android." + appString)
+                        startActivity(launchIntent)
+                    }
+
+                }
+                */
+                var intent= Intent(Intent.ACTION_MAIN, null)
+                intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                var packageAppsList =this.getPackageManager().queryIntentActivities(intent, 0)
+
+
+
+                for (param in packageAppsList ){
+                    //print it to logger etc.
+                    Log.e(TAG, param.toString())
+                    param.loadLabel(this.getPackageManager())
+                    val pm = getApplicationContext().getPackageManager()
+                    val ai: ApplicationInfo
+                    try
+                    {
+                        ai = pm.getApplicationInfo(this.getPackageName(), 0)
+                    }
+                    catch (e: PackageManager.NameNotFoundException) {
+                        //ai = null
+                    }
+                   // val applicationName = (if (ai != null) pm.getApplicationLabel(ai) else "(unknown)") as String
+                }
+                }
+
             else -> {
                 Toast.makeText(this,"Action cannot be performed",Toast.LENGTH_LONG).show()
             }
