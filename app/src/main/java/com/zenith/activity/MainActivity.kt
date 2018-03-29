@@ -14,6 +14,7 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -40,9 +41,12 @@ class MainActivity : AppCompatActivity(), AIListener{
         val PERMISSIONS_REQUEST_READ_CONTACTS = 1000
         lateinit var progressDialog: ProgressDialog
         var number = "0000000000"
+        val app_name_list = ArrayList<String>()
+        val app_package_list = ArrayList<String>()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        findPackageName()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -91,16 +95,56 @@ class MainActivity : AppCompatActivity(), AIListener{
         }
     }
 
+    fun findPackageName(){
+
+        var intent= Intent(Intent.ACTION_MAIN, null)
+        intent.addCategory(Intent.CATEGORY_LAUNCHER)
+        //var packages = pm.queryIntentActivities(intent, 0)
+        var packageAppsList =this.getPackageManager().queryIntentActivities(intent, 0)
+        val pm = getPackageManager()
+
+
+        for (reso in packageAppsList ){
+
+            try
+            {
+                val package_name = reso.activityInfo.packageName
+                Log.e(TAG, reso.toString())
+                val app_name = pm.getApplicationLabel(
+                        pm.getApplicationInfo(package_name, PackageManager.GET_META_DATA)) as String
+                var same = false
+                for (i in 0 until app_name_list.size)
+                {
+                    if (package_name == app_package_list.get(i))
+                        same = true
+                }
+                if (!same)
+                {
+                    app_name_list.add(app_name)
+                    Log.e(TAG, app_name.toString())
+
+                    app_package_list.add(package_name)
+                }
+
+            }
+            catch (e: PackageManager.NameNotFoundException) {
+                Toast.makeText(this,"No such APP",Toast.LENGTH_LONG).show()
+            }
+
+        }
+
+    }
+
     override fun onResult(result: AIResponse) {
         val res = result.result
         val query = res.resolvedQuery.toString()
 
-        val str= query.split("\\s+".toRegex())
+       // val str= query.split("\\s+".toRegex())
 
-        Log.e(TAG,"Action = " + str[0])
-        Log.e(TAG,"Parameter = " + str[1])
+        Log.e(TAG,"Action = " + query.substringBefore(" "))
+        Log.e(TAG,"Parameter = " + query.substringAfter(" "))
 
-        performAction(str[0],str[1])
+        performAction(query.substringBefore(" "),query.substringAfter(" "))
     }
 
     override fun onListeningStarted() {
@@ -144,50 +188,30 @@ class MainActivity : AppCompatActivity(), AIListener{
                 }
             }
             "open" -> {
-                /*
-                Log.e(TAG,param)
-                val appString = param.toLowerCase()
-                Log.e(TAG,appString)
-                when(appString) {
-                    "whatsapp","zenith" -> {
-                        val launchIntent = packageManager.getLaunchIntentForPackage("com." + appString)
-                        startActivity(launchIntent)
-                    }
-                    "facebook" -> {
-                        val launchIntent = packageManager.getLaunchIntentForPackage("com." + appString + ".katana")
-                        startActivity(launchIntent)
-                    }
-                    "snapchat","instagram","    ","" -> {
-                        val launchIntent = packageManager.getLaunchIntentForPackage("com." + appString + ".android")
-                        startActivity(launchIntent)
-                    }
-                    else ->{
-                        val launchIntent = packageManager.getLaunchIntentForPackage("com.google.android." + appString)
-                        startActivity(launchIntent)
-                    }
 
-                }
-                */
                 var intent= Intent(Intent.ACTION_MAIN, null)
                 intent.addCategory(Intent.CATEGORY_LAUNCHER)
-                var packageAppsList =this.getPackageManager().queryIntentActivities(intent, 0)
 
+                for (i in 0 until app_name_list.size){
 
-
-                for (param in packageAppsList ){
-                    //print it to logger etc.
-                    Log.e(TAG, param.toString())
-                    param.loadLabel(this.getPackageManager())
-                    val pm = getApplicationContext().getPackageManager()
-                    val ai: ApplicationInfo
                     try
                     {
-                        ai = pm.getApplicationInfo(this.getPackageName(), 0)
+                           // Log.e(TAG, app_name_list.get(i).toString())
+                            if (app_name_list.get(i).compareTo(param, true)==0)
+                            {
+                                Toast.makeText(this,"This works!",Toast.LENGTH_LONG).show()
+                                val launchIntent = getPackageManager().getLaunchIntentForPackage(app_package_list.get(i))
+                                if (launchIntent != null)
+                                {
+                                    startActivity(launchIntent)//null pointer check in case package name was not found
+                                }
+                            }
+
                     }
                     catch (e: PackageManager.NameNotFoundException) {
-                        //ai = null
+                        Toast.makeText(this,"No such APP",Toast.LENGTH_LONG).show()
                     }
-                   // val applicationName = (if (ai != null) pm.getApplicationLabel(ai) else "(unknown)") as String
+
                 }
                 }
 
