@@ -19,7 +19,6 @@ class SmsReceiver : BroadcastReceiver() {
 
     companion object {
         val TAG = "SmsReceiver"
-        val
         lateinit var TTS:TextToSpeech
     }
 
@@ -39,7 +38,7 @@ class SmsReceiver : BroadcastReceiver() {
 
                 for (i in pdusObj.indices) {
                     val currentMessage = SmsMessage.createFromPdu(pdusObj[i] as ByteArray)
-                    val sender = getContactName(currentMessage.originatingAddress)
+                    //val sender = getContactName(currentMessage.originatingAddress)
                     val phoneNumber = currentMessage.displayOriginatingAddress
                     val message = currentMessage.displayMessageBody
 
