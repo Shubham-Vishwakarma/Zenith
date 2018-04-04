@@ -10,25 +10,22 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ProgressDialog
 import android.content.ActivityNotFoundException
+import android.content.BroadcastReceiver
 import android.content.ContentResolver
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.view.View
 import android.widget.Button
-import android.widget.ImageButton
-import android.widget.TextView
 import android.widget.Toast
 import com.zenith.R
-import kotlinx.android.synthetic.main.activity_main.*
+import com.zenith.Speaker
 import java.util.*
 
 
@@ -39,6 +36,13 @@ class MainActivity : AppCompatActivity(), AIListener{
         val REQ_CODE_SPEECH_INPUT = 100
         val CLIENT_TOKEN = "0c6d9a13bae340148af0528442089191"
         val PERMISSIONS_REQUEST_READ_CONTACTS = 1000
+
+        private final val CHECK_CODE = 0x1
+        private final val LONG_DURATION = 5000
+        private final val SHORT_DURATION = 1200
+        private lateinit var speaker: Speaker
+        private lateinit var smsReceiver: BroadcastReceiver
+
         lateinit var progressDialog: ProgressDialog
         var number = "0000000000"
         val app_name_list = ArrayList<String>()
@@ -63,7 +67,6 @@ class MainActivity : AppCompatActivity(), AIListener{
 
     }
 
-
     /**
      * Showing google speech input dialog
      * */
@@ -80,7 +83,7 @@ class MainActivity : AppCompatActivity(), AIListener{
         }
     }
 
-    /**
+     /**
      * Receiving speech input
      * */
     override fun onActivityResult(requestCode:Int, resultCode:Int, data:Intent) {
@@ -92,47 +95,18 @@ class MainActivity : AppCompatActivity(), AIListener{
                     sendMessageIntent(result[0])
                 }
             }
-        }
-    }
 
-    fun findPackageName(){
-
-        var intent= Intent(Intent.ACTION_MAIN, null)
-        intent.addCategory(Intent.CATEGORY_LAUNCHER)
-        //var packages = pm.queryIntentActivities(intent, 0)
-        var packageAppsList =this.getPackageManager().queryIntentActivities(intent, 0)
-        val pm = getPackageManager()
-
-
-        for (reso in packageAppsList ){
-
-            try
-            {
-                val package_name = reso.activityInfo.packageName
-                Log.e(TAG, reso.toString())
-                val app_name = pm.getApplicationLabel(
-                        pm.getApplicationInfo(package_name, PackageManager.GET_META_DATA)) as String
-                var same = false
-                for (i in 0 until app_name_list.size)
-                {
-                    if (package_name == app_package_list.get(i))
-                        same = true
+            CHECK_CODE -> {
+                if(resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS){
+                    speaker = Speaker(this)
                 }
-                if (!same)
-                {
-                    app_name_list.add(app_name)
-                    Log.e(TAG, app_name.toString())
-
-                    app_package_list.add(package_name)
+                else{
+                    val install = Intent()
+                    install.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
+                    startActivity(install)
                 }
-
             }
-            catch (e: PackageManager.NameNotFoundException) {
-                Toast.makeText(this,"No such APP",Toast.LENGTH_LONG).show()
-            }
-
         }
-
     }
 
     override fun onResult(result: AIResponse) {
@@ -188,24 +162,22 @@ class MainActivity : AppCompatActivity(), AIListener{
                 }
             }
             "open" -> {
-
-                var intent= Intent(Intent.ACTION_MAIN, null)
+                val intent= Intent(Intent.ACTION_MAIN, null)
                 intent.addCategory(Intent.CATEGORY_LAUNCHER)
 
                 for (i in 0 until app_name_list.size){
-
                     try
                     {
-                           // Log.e(TAG, app_name_list.get(i).toString())
-                            if (app_name_list.get(i).compareTo(param, true)==0)
+                       // Log.e(TAG, app_name_list.get(i).toString())
+                        if (app_name_list.get(i).compareTo(param, true)==0)
+                        {
+                            Toast.makeText(this,"This works!",Toast.LENGTH_LONG).show()
+                            val launchIntent = getPackageManager().getLaunchIntentForPackage(app_package_list.get(i))
+                            if (launchIntent != null)
                             {
-                                Toast.makeText(this,"This works!",Toast.LENGTH_LONG).show()
-                                val launchIntent = getPackageManager().getLaunchIntentForPackage(app_package_list.get(i))
-                                if (launchIntent != null)
-                                {
-                                    startActivity(launchIntent)//null pointer check in case package name was not found
-                                }
+                                startActivity(launchIntent)//null pointer check in case package name was not found
                             }
+                        }
 
                     }
                     catch (e: PackageManager.NameNotFoundException) {
@@ -213,8 +185,7 @@ class MainActivity : AppCompatActivity(), AIListener{
                     }
 
                 }
-                }
-
+            }
             else -> {
                 Toast.makeText(this,"Action cannot be performed",Toast.LENGTH_LONG).show()
             }
@@ -285,4 +256,50 @@ class MainActivity : AppCompatActivity(), AIListener{
     private fun hideProgressDialog(){
         progressDialog.cancel()
     }
+
+    private fun findPackageName(){
+
+        val intent= Intent(Intent.ACTION_MAIN, null)
+        intent.addCategory(Intent.CATEGORY_LAUNCHER)
+        //var packages = pm.queryIntentActivities(intent, 0)
+        val packageAppsList =this.packageManager.queryIntentActivities(intent, 0)
+        val pm = packageManager
+
+        for (reso in packageAppsList ){
+
+            try
+            {
+                val package_name = reso.activityInfo.packageName
+                Log.e(TAG, reso.toString())
+                val app_name = pm.getApplicationLabel(
+                        pm.getApplicationInfo(package_name, PackageManager.GET_META_DATA)) as String
+                var same = false
+                for (i in 0 until app_name_list.size)
+                {
+                    if (package_name == app_package_list.get(i))
+                        same = true
+                }
+                if (!same)
+                {
+                    app_name_list.add(app_name)
+                    Log.e(TAG, app_name.toString())
+
+                    app_package_list.add(package_name)
+                }
+
+            }
+            catch (e: PackageManager.NameNotFoundException) {
+                Toast.makeText(this,"No such APP",Toast.LENGTH_LONG).show()
+            }
+
+        }
+
+    }
+
+    private fun checkTTS(){
+        val check = Intent()
+        check.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA)
+        startActivityForResult(check, CHECK_CODE)
+    }
+    
 }

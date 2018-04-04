@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">Zenith</string>
+
+    <string name="client_token">0c6d9a13bae340148af0528442089191</string>
+
     <string name="sms_label">Latest SMS</string>
     <string name="none">None</string>
     <string name="speech_toggle_on">START SPEAKING</string>

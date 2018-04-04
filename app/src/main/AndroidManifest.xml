@@ -44,7 +44,9 @@
             </intent-filter>
         </receiver>
 
-
+        <service
+            android:name=".services.TextToSpeechService"
+            android:exported="false"/>
 
     </application>
 
