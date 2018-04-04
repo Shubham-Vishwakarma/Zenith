@@ -9,16 +9,19 @@ import ai.api.model.AIResponse
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ProgressDialog
+import android.app.SearchManager
 import android.content.ActivityNotFoundException
 import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.provider.MediaStore
 import android.speech.RecognizerIntent
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
@@ -43,10 +46,14 @@ class MainActivity : AppCompatActivity(), AIListener{
         var number = "0000000000"
         val app_name_list = ArrayList<String>()
         val app_package_list = ArrayList<String>()
+        val music_name_list = ArrayList<String>()
+        val music_total_list = ArrayList<String>()
+        private val STAR = arrayOf("*")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         findPackageName()
+        ListAllSongs()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -214,11 +221,126 @@ class MainActivity : AppCompatActivity(), AIListener{
 
                 }
                 }
+            "play" -> {
+                    playSearchArtist(param)
+            }
 
             else -> {
                 Toast.makeText(this,"Action cannot be performed",Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+
+
+
+    fun ListAllSongs() {
+        val cursor: Cursor?
+        val allsongsuri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        val selection = MediaStore.Audio.Media.IS_MUSIC + " != 0"
+
+        if (isSdPresent()) {
+            cursor = contentResolver.query(allsongsuri, STAR, selection, null, null)
+
+            if (cursor != null) {
+                if (cursor!!.moveToFirst()) {
+                    do {
+                        val songname = cursor!!
+                                .getString(cursor!!
+                                        .getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME))
+                        Log.e(TAG,"song name = " + songname)
+                       /* val song_id = cursor!!.getInt(cursor!!
+                                .getColumnIndex(MediaStore.Audio.Media._ID))
+
+                        val fullpath = cursor!!.getString(cursor!!
+                                .getColumnIndex(MediaStore.Audio.Media.DATA))
+
+                        val albumname = cursor!!.getString(cursor!!
+                                .getColumnIndex(MediaStore.Audio.Media.ALBUM))*/
+                        var same = false
+                        for (i in 0 until music_name_list.size)
+                        {
+                            if (songname == music_name_list.get(i))
+                                same = true
+                        }
+                        if (!same)
+                        {
+                            music_name_list.add(songname)
+                            Log.e(TAG, songname.toString())
+                        }
+
+
+                    } while (cursor!!.moveToNext())
+                }
+                cursor!!.close()
+            }
+        }
+    }
+
+
+    fun isSdPresent(): Boolean {
+        return android.os.Environment.getExternalStorageState() == android.os.Environment.MEDIA_MOUNTED
+    }
+
+
+    private fun playSearchArtist(artist: String) {
+    val intent: Intent =  Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH);
+    intent.putExtra(MediaStore.EXTRA_MEDIA_FOCUS,
+                    MediaStore.Audio.Artists.ENTRY_CONTENT_TYPE);
+    intent.putExtra(MediaStore.EXTRA_MEDIA_TITLE, artist);
+    intent.putExtra(SearchManager.QUERY, artist);
+    if(searchMusicFolder(artist)){
+        val pkg = searchAppPackageName("Music")
+        if(pkg!=null){
+            val launchIntent = getPackageManager().getLaunchIntentForPackage(pkg)
+            if (launchIntent != null) {
+                startActivity(launchIntent)//null pointer check in case package name was not found
+            }
+        }
+        else{
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+            }
+        }
+    }
+    else if (intent.resolveActivity(getPackageManager()) != null) {
+        startActivity(intent);
+    }
+}
+    private fun searchMusicFolder(songname: String): Boolean
+    {
+        for(i in 0 until music_name_list.size){
+            try
+            {
+                if (music_name_list.get(i).contains(songname,true))
+                {
+                    Toast.makeText(this,"This works!",Toast.LENGTH_LONG).show()
+                    return true
+                }
+            }
+            catch (e: PackageManager.NameNotFoundException) {
+                Toast.makeText(this,"No such song in Music folder",Toast.LENGTH_LONG).show()
+            }
+        }
+        return false
+    }
+
+    private fun searchAppPackageName(appName: String): String{
+        for(i in 0 until app_name_list.size){
+            try
+            {
+                if (app_name_list.get(i).compareTo(appName,true)==0)
+                {
+                    Toast.makeText(this,"This is Music app!",Toast.LENGTH_LONG).show()
+                    Log.e(TAG,"pkg name: "+app_package_list.get(i))
+                    return app_package_list.get(i)
+                }
+            }
+            catch (e: PackageManager.NameNotFoundException) {
+                Toast.makeText(this,"No such APP",Toast.LENGTH_LONG).show()
+            }
+        }
+        return "Null"
     }
 
     private fun sendMessageIntent(message: String){
