@@ -1,28 +1,89 @@
 package com.zenith.receiver
 
-import android.app.Activity
-import android.app.KeyguardManager
+import ai.api.AIConfiguration
+import ai.api.AIListener
+import ai.api.android.AIService
+import ai.api.model.AIError
+import ai.api.model.AIResponse
+import android.app.ProgressDialog
 import android.content.Context
-import android.content.Intent
 import android.util.Log
-import android.view.KeyEvent
 import android.widget.Toast
-import android.view.WindowManager
+import com.zenith.activity.MainActivity
 import kotlin.concurrent.thread
-import android.media.AudioManager
-import java.lang.Thread.sleep
 
 
-class CallReceiver : PhoneCallReceiver() {
+class CallReceiver : PhoneCallReceiver(), AIListener {
 
     companion object {
         val TAG = "CallReceiver"
+        lateinit var context: Context
+        lateinit var progressDialog: ProgressDialog
     }
 
     override fun onIncomingCallStarted(context: Context, number: String){
         Toast.makeText(context,"Incoming call", Toast.LENGTH_LONG).show()
 
-        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        CallReceiver.context = context
+
+        thread(start = true){
+            val config = ai.api.android.AIConfiguration(MainActivity.CLIENT_TOKEN,
+                    AIConfiguration.SupportedLanguages.English,
+                    ai.api.android.AIConfiguration.RecognitionEngine.System)
+
+            val aiService = AIService.getService(CallReceiver.context,config)
+            aiService.setListener(this)
+        }
+    }
+
+    override fun onOutgoingCallStarted(context: Context, number: String) {
+        Toast.makeText(context,"Outgoing call", Toast.LENGTH_LONG).show()
+    }
+
+    override fun onIncomingCallEnded(context: Context, number: String){
+        Toast.makeText(context,"Incoming ended",Toast.LENGTH_LONG).show()
+    }
+
+    override fun onOutgoingCallEnded(context: Context, number: String){
+        Toast.makeText(context,"Outgoing ended",Toast.LENGTH_LONG).show()
+    }
+
+    override fun onMissedCall(context: Context, number: String){
+        Toast.makeText(context,"Missed call",Toast.LENGTH_LONG).show()
+    }
+
+
+    override fun onResult(result: AIResponse) {
+        val res = result.result
+        val query = res.resolvedQuery.toString()
+
+        Log.e(TAG,"Query = " + query)
+    }
+
+    override fun onListeningStarted() {
+        Log.e(TAG,"Listening Started")
+        showProgressDialog()
+    }
+
+    override fun onAudioLevel(level: Float) {
+    }
+
+    override fun onError(error: AIError) {
+        Log.e(TAG,"Error = " + error)
+    }
+
+    override fun onListeningCanceled() {
+        Log.e(TAG,"Listening Cancelled")
+    }
+
+    override fun onListeningFinished() {
+        Log.e(TAG,"Listening Finished")
+        hideProgressDialog()
+    }
+
+
+    private fun someFunction(){
+        /*val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         try {
             try {
@@ -62,24 +123,20 @@ class CallReceiver : PhoneCallReceiver() {
         }
         catch (ex:Exception){
             Log.e(TAG,"Error = " + ex)
-        }
-
+        }*/
     }
 
-    override fun onOutgoingCallStarted(context: Context, number: String) {
-        Toast.makeText(context,"Outgoing call", Toast.LENGTH_LONG).show()
+    private fun showProgressDialog(){
+        progressDialog = ProgressDialog(context)
+        progressDialog.setMessage("Listening...")
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER)
+        progressDialog.setCancelable(false)
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.show()
     }
 
-    override fun onIncomingCallEnded(context: Context, number: String){
-        Toast.makeText(context,"Incoming ended",Toast.LENGTH_LONG).show()
-    }
-
-    override fun onOutgoingCallEnded(context: Context, number: String){
-        Toast.makeText(context,"Outgoing ended",Toast.LENGTH_LONG).show()
-    }
-
-    override fun onMissedCall(context: Context, number: String){
-        Toast.makeText(context,"Missed call",Toast.LENGTH_LONG).show()
+    private fun hideProgressDialog(){
+        progressDialog.cancel()
     }
 
 }

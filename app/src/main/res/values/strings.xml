@@ -1,5 +1,27 @@
 <resources>
     <string name="app_name">Zenith</string>
+
+    <string name="client_token">0c6d9a13bae340148af0528442089191</string>
+
+    <string name="next">NEXT</string>
+    <string name="skip">SKIP</string>
+    <string name="start">GOT IT</string>
+
+    <string name="slide_1_title">Welcome to Zenith!</string>
+    <string name="slide_1_desc">The easiest way to get your task done!</string>
+
+    <string name="slide_2_title">Call</string>
+    <string name="slide_2_desc">Call someone without any hassle!</string>
+
+    <string name="slide_3_title">Message</string>
+    <string name="slide_3_desc">No need to type, just say it!</string>
+
+    <string name="slide_4_title">Open App</string>
+    <string name="slide_4_desc">You say the name, zenith will open it!</string>
+
+    <string name="play_again_desc">To see the welcome slider again, goto Settings -> apps -> welcome slider -> clear data</string>
+    <string name="play_again">Play Again</string>
+
     <string name="sms_label">Latest SMS</string>
     <string name="none">None</string>
     <string name="speech_toggle_on">START SPEAKING</string>

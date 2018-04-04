@@ -5,12 +5,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.zenith.activity.MainActivity"
+    android:gravity="center"
     android:orientation="vertical">
 
-    <Button
+    <ImageButton
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="center"
+        android:scaleType="fitCenter"
+        android:id="@+id/start"
+        android:text="Start"
+        android:src="@drawable/ic_mic_black_24dp"
+        android:background = "@drawable/roundedbutton"
+        />
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/start"
-        android:text="Start"/>
+        android:text="Tap Mic"
+        android:padding="20dp"
+        android:gravity="center"
+        android:textSize="25dp"
+        android:textColor="@color/colorPrimary"
+        />
+
 
 </LinearLayout>

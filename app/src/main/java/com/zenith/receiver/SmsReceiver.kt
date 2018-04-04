@@ -4,9 +4,12 @@ import android.widget.Toast
 import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeechService
 import android.telephony.SmsManager
 import android.telephony.SmsMessage
 import android.util.Log
+import java.util.*
 
 
 /**
@@ -14,61 +17,40 @@ import android.util.Log
  */
 class SmsReceiver : BroadcastReceiver() {
 
-//    override fun onReceive(context: Context, intent: Intent) {
-//        val intentExtras = intent.extras
-//
-//        if (intentExtras != null) {
-//            /* Get Messages */
-//            val sms = intentExtras.get("pdus") as Array<Any>
-//
-//            for (i in sms.indices) {
-//                /* Parse Each Message */
-//                val smsMessage = SmsMessage.createFromPdu(sms[i] as ByteArray)
-//
-//                val phone = smsMessage.getOriginatingAddress()
-//                val message = smsMessage.getMessageBody().toString()
-//
-//                Toast.makeText(context, phone + ": " + message, Toast.LENGTH_SHORT).show()
-//            }
-//        }
-//    }
-
-    val sms = SmsManager.getDefault()
+    companion object {
+        val TAG = "SmsReceiver"
+        lateinit var TTS:TextToSpeech
+    }
 
     override fun onReceive(context: Context, intent: Intent) {
 
         // Retrieves a map of extended data from the intent.
         val bundle = intent.extras
 
+        TTS = TextToSpeech(context,TextToSpeech.OnInitListener {
+            Log.e(TAG,"Error Code = " + TextToSpeech.ERROR)
+            TTS.language = Locale.US
+        })
+
         try {
-
             if (bundle != null) {
-
-                val pdusObj = bundle.get("pdus") as Array<Any>
+                val pdusObj = bundle.get("pdus") as Array<*>
 
                 for (i in pdusObj.indices) {
-
                     val currentMessage = SmsMessage.createFromPdu(pdusObj[i] as ByteArray)
+                    //val sender = getContactName(currentMessage.originatingAddress)
                     val phoneNumber = currentMessage.displayOriginatingAddress
-
                     val message = currentMessage.displayMessageBody
 
-                    Log.i("SmsReceiver", "senderNum: $phoneNumber; message: $message")
-
-
-                    // Show Alert
-                    val duration = Toast.LENGTH_LONG
-                    val toast = Toast.makeText(context,
-                            "senderNum: $phoneNumber, message: $message", duration)
-                    toast.show()
-
-                } // end for loop
-            } // bundle is null
+                    Log.i(TAG, "senderNum: $phoneNumber; message: $message")
+                    Toast.makeText(context, "senderNum: $phoneNumber, message: $message", Toast.LENGTH_LONG).show()
+                }
+            }
+            else
+                Log.e(TAG,"Bundle is null")
 
         } catch (e: Exception) {
-            Log.e("SmsReceiver", "Exception smsReceiver" + e)
-
+            Log.e(TAG, "Exception smsReceiver" + e)
         }
-
     }
 }
