@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity(), AIListener{
 
         val aiService = AIService.getService(this,config)
         aiService.setListener(this)
-        val button = findViewById<Button>(R.id.start)
+        val button = findViewById<ImageButton>(R.id.start)
         button.setOnClickListener{
             aiService.startListening()
         }
