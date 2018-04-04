@@ -22,7 +22,7 @@ import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.Toast
 import com.zenith.R
 import com.zenith.Speaker
@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity(), AIListener{
 
         val aiService = AIService.getService(this,config)
         aiService.setListener(this)
-        val button = findViewById<Button>(R.id.start)
+        val button = findViewById<ImageButton>(R.id.start)
         button.setOnClickListener{
             aiService.startListening()
         }
