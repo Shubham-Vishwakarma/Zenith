@@ -17,6 +17,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.database.Cursor
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -47,7 +48,7 @@ class MainActivity : AppCompatActivity(), AIListener{
         val app_name_list = ArrayList<String>()
         val app_package_list = ArrayList<String>()
         val music_name_list = ArrayList<String>()
-        val music_total_list = ArrayList<String>()
+        val music_path_list = ArrayList<String>()
         private val STAR = arrayOf("*")
     }
 
@@ -102,13 +103,13 @@ class MainActivity : AppCompatActivity(), AIListener{
         }
     }
 
-    fun findPackageName(){
+    private fun findPackageName(){
 
-        var intent= Intent(Intent.ACTION_MAIN, null)
+        val intent= Intent(Intent.ACTION_MAIN, null)
         intent.addCategory(Intent.CATEGORY_LAUNCHER)
         //var packages = pm.queryIntentActivities(intent, 0)
-        var packageAppsList =this.getPackageManager().queryIntentActivities(intent, 0)
-        val pm = getPackageManager()
+        val packageAppsList =this.packageManager.queryIntentActivities(intent, 0)
+        val pm = packageManager
 
 
         for (reso in packageAppsList ){
@@ -151,7 +152,7 @@ class MainActivity : AppCompatActivity(), AIListener{
         Log.e(TAG,"Action = " + query.substringBefore(" "))
         Log.e(TAG,"Parameter = " + query.substringAfter(" "))
 
-        performAction(query.substringBefore(" "),query.substringAfter(" "))
+        performAction(query.substringBefore(" ").toLowerCase(),query.substringAfter(" "))
     }
 
     override fun onListeningStarted() {
@@ -243,13 +244,15 @@ class MainActivity : AppCompatActivity(), AIListener{
             cursor = contentResolver.query(allsongsuri, STAR, selection, null, null)
 
             if (cursor != null) {
-                if (cursor!!.moveToFirst()) {
+                if (cursor.moveToFirst()) {
                     do {
-                        val songname = cursor!!
-                                .getString(cursor!!
-                                        .getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME))
+                        val songname = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME))
                         Log.e(TAG,"song name = " + songname)
-                       /* val song_id = cursor!!.getInt(cursor!!
+
+                        val fullpath = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA))
+                        Log.e(TAG,"song fullpath = " + fullpath)
+
+                        /* val song_id = cursor!!.getInt(cursor!!
                                 .getColumnIndex(MediaStore.Audio.Media._ID))
 
                         val fullpath = cursor!!.getString(cursor!!
@@ -266,13 +269,14 @@ class MainActivity : AppCompatActivity(), AIListener{
                         if (!same)
                         {
                             music_name_list.add(songname)
-                            Log.e(TAG, songname.toString())
+                            music_path_list.add(fullpath)
+                            Log.e(TAG, "Song Name = " + songname.toString())
                         }
 
 
-                    } while (cursor!!.moveToNext())
+                    } while (cursor.moveToNext())
                 }
-                cursor!!.close()
+                cursor.close()
             }
         }
     }
@@ -289,22 +293,10 @@ class MainActivity : AppCompatActivity(), AIListener{
                     MediaStore.Audio.Artists.ENTRY_CONTENT_TYPE);
     intent.putExtra(MediaStore.EXTRA_MEDIA_TITLE, artist);
     intent.putExtra(SearchManager.QUERY, artist);
-    if(searchMusicFolder(artist)){
-        val pkg = searchAppPackageName("Music")
-        if(pkg!=null){
-            val launchIntent = getPackageManager().getLaunchIntentForPackage(pkg)
-            if (launchIntent != null) {
-                startActivity(launchIntent)//null pointer check in case package name was not found
-            }
+    if(!searchMusicFolder(artist)){
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent);
         }
-        else{
-            if (intent.resolveActivity(getPackageManager()) != null) {
-                startActivity(intent);
-            }
-        }
-    }
-    else if (intent.resolveActivity(getPackageManager()) != null) {
-        startActivity(intent);
     }
 }
     private fun searchMusicFolder(songname: String): Boolean
@@ -312,16 +304,21 @@ class MainActivity : AppCompatActivity(), AIListener{
         for(i in 0 until music_name_list.size){
             try
             {
-                if (music_name_list.get(i).contains(songname,true))
+                if (music_name_list[i].contains(songname,true))
                 {
-                    Toast.makeText(this,"This works!",Toast.LENGTH_LONG).show()
+                    Toast.makeText(this,"Playing " + songname,Toast.LENGTH_LONG).show()
+                    val mp = MediaPlayer();
+                    mp.setDataSource(music_path_list[i])
+                    mp.prepare()
+                    mp.start()
                     return true
                 }
             }
             catch (e: PackageManager.NameNotFoundException) {
-                Toast.makeText(this,"No such song in Music folder",Toast.LENGTH_LONG).show()
+                Log.e(TAG,"Error = " + e)
             }
         }
+        Toast.makeText(this,"No such song in Music folder",Toast.LENGTH_LONG).show()
         return false
     }
 
